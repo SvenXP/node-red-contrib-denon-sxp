@@ -172,17 +172,16 @@ module.exports = function (RED) {
                     data.cmd = (data.cmd || data.method || '').toString().trim();
                     data.value = data.value || data.params;
 
-                    if (!data.cmd && !data.value) {
+                    if (!data.cmd && (data.value === undefined || data.value === null || data.value === '')) {
                         if (callback) callback(new Error('Empty command'));
                         return;
                     }
 
                     const rawCmd = data.cmd.toUpperCase();
-                    const socket = fsm.connection && typeof fsm.connection.getConnection === 'function' ? fsm.connection.getConnection() : null;
 
-                    // Dedicated high-level helper if available and desired
-                    if (rawCmd === 'SETVOLUMEDB' && typeof fsm.connection.setVolumeDb === 'function') {
-                        fsm.connection.setVolumeDb(parseFloat(data.value), function (error, response) {
+                    // Dedicated high-level helper if available
+                    if (rawCmd === 'SETVOLUMEDB' && typeof fsm.setVolumeDb === 'function') {
+                        fsm.setVolumeDb(parseFloat(data.value), function (error, response) {
                             if (callback) callback(error, response);
                         });
                         return;
@@ -197,33 +196,14 @@ module.exports = function (RED) {
                     // Ensure carriage return formatting if writing directly
                     const asciiCmd = sendStr.replace(/\r?\n?$/, '');
 
-                    // Determine dynamic timeout: Power on / zone power on needs more time (8000ms)
-                    const isPowerBoot = /^(PWON|ZMON|ZM\s*ON|PW\s*ON)/i.test(asciiCmd);
-                    const timeoutMs = isPowerBoot ? 8000 : (data.timeout || 3000);
-
-                    // If denon connection client supports send with timeout or raw socket write:
-                    // Prefer direct socket write to prevent library queue deadlock on asynchronous status responses
-                    if (socket && typeof socket.write === 'function' && socket.writable) {
-                        socket.write(asciiCmd + '\r', function (err) {
+                    // Send directly via native FSM sendAscii
+                    if (typeof fsm.sendAscii === 'function') {
+                        fsm.sendAscii(asciiCmd, function (err) {
                             if (callback) callback(err, { cmd: asciiCmd, status: err ? 'error' : 'sent' });
                         });
-                    } else if (typeof fsm.connection.send === 'function') {
-                        // Fallback to library send method with safe prefix matching
-                        const prefix = asciiCmd.length >= 2 ? asciiCmd.substring(0, 2) : '';
-                        let responded = false;
-                        const timer = setTimeout(function () {
-                            if (!responded) {
-                                responded = true;
-                                if (callback) callback(null, { cmd: asciiCmd, status: 'dispatched_timeout_ignored' });
-                            }
-                        }, timeoutMs);
-
-                        fsm.connection.send(asciiCmd, prefix, function (error, response) {
-                            if (!responded) {
-                                responded = true;
-                                clearTimeout(timer);
-                                if (callback) callback(error, response);
-                            }
+                    } else if (fsm.connection && typeof fsm.connection.sendAscii === 'function') {
+                        fsm.connection.sendAscii(asciiCmd, function (err) {
+                            if (callback) callback(err, { cmd: asciiCmd, status: err ? 'error' : 'sent' });
                         });
                     } else {
                         throw new Error('No active Denon connection available');
