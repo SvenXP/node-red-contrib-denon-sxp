@@ -1,19 +1,21 @@
-node-red-contrib-denon
+node-red-contrib-denon-sxp
 ========================
 
 A <a href="http://nodered.org" target="_new">Node-RED</a> node to communicate [Denon AVR receivers](http://www.denon.com) over telnet (port 23) TCP/IP connection.
+
+This fork fixes socket/timeout handling issues and improves connection stability.
 
 # Install
 -------
 
 Run command on Node-RED installation directory
 
-	npm install node-red-contrib-denon
+	npm install node-red-contrib-denon-sxp
 
 # Usage
 -----
 
-![node-red-denon-flow] (https://raw.githubusercontent.com/estbeetoo/node-red-contrib-denon/master/example.png)
+![node-red-denon-flow](https://raw.githubusercontent.com/SvenXP/node-red-contrib-denon-sxp/main/example.png)
 
 If you want to use this node simply inject message's payload as string:
 
@@ -43,22 +45,22 @@ Master Volume DOWN by 0.5 - command from Denon AVR protocol: [DENON_PROTOCOL_V7.
 
 Currently, there is only one such command implemented: `SetVolumeDB`.
 One may use `setvolumedb` too, cause it's case insensitive.
-So, `msg` object shoud looks like:
+So, `msg` object should look like:
 ```javascript
 {
-    topic; "setvolumedb",
-    payload: -65.5
+    "topic": "setvolumedb",
+    "payload": -65.5
 }
 ```
 It will set the master volume to -65.5dB.
 
 ## `Denon-In`
 
-Node sends to single output messages from Denon quipment with structure:
+Node sends to single output messages from Denon equipment with structure:
 ```javascript
 {
-    topic: 'denon',
-    payload: 'PWON'
+    "topic": "denon",
+    "payload": "PWON"
 }
 ```
 
@@ -66,23 +68,23 @@ where `notification` could be `PWON` and `data` contain additional info, argumen
 
 # Collect debug log for issues
 
-Current package use debug package: https://www.npmjs.com/package/debug.
-Run you `node-red` with command to enable debug output:
+Current package uses debug package: https://www.npmjs.com/package/debug.
+Run your `node-red` with command to enable debug output:
 
 ```
-set DEBUG=node-red-contrib-denon
+set DEBUG=node-red-contrib-denon-sxp
 node-red
 ```
 
 for globally installed Node-RED, or
 
 ```
-set DEBUG=node-red-contrib-denon
+set DEBUG=node-red-contrib-denon-sxp
 node node-red/red.js
 ```
 for local Node-RED.
-Highly recommend to use (cross-env)[https://www.npmjs.com/package/cross-env] package to set enviromnent variables in cross OS way.
+Highly recommend to use [cross-env](https://www.npmjs.com/package/cross-env) package to set environment variables in cross OS way.
 
-# Additinal documentation
+# Additional documentation
 
 Take a look at Denon AVR protocol: [DENON_PROTOCOL_V7.6.0.pdf](doc/AVR3312CI_AVR3312_PROTOCOL_V7.6.0.pdf)
